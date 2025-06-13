@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dictado a Braille</title>
+  <style>
+    body{font-family:system-ui,Arial,Helvetica,sans-serif;margin:2rem;line-height:1.4;background:#fafafa;color:#222}
+    .braille{font-size:3rem;letter-spacing:.5rem;margin-top:1rem;word-wrap:break-word}
+    button{padding:.6rem 1.2rem;font-size:1rem;cursor:pointer;border:2px solid #333;border-radius:6px;background:#fff}
+    button[aria-pressed="true"]{background:#333;color:#fff}
+    .text{margin-top:1rem;font-size:1.2rem}
+  </style>
+</head>
+<body>
+  <h1>Dictado a Braille</h1>
+  <p>Presiona «Comenzar dictado» y pronuncia letras o palabras. El texto se mostrará en Braille Unicode.</p>
+  <button id="toggle" aria-pressed="false">🎤 Comenzar dictado</button>
+  <div class="text" id="plain-text" aria-live="polite"></div>
+  <div class="braille" id="braille-output" aria-live="polite"></div>
+
+  <script>
+    /* Mapa de caracteres latino básicos a patrones Unicode Braille (6 puntos) */
+    const brailleMap = {
+      a:"\u2801", b:"\u2803", c:"\u2809", d:"\u2819", e:"\u2811", f:"\u280B", g:"\u281B", h:"\u2813", i:"\u280A", j:"\u281A",
+      k:"\u2805", l:"\u2807", m:"\u280D", n:"\u281D", o:"\u2815", p:"\u280F", q:"\u281F", r:"\u2817", s:"\u280E", t:"\u281E",
+      u:"\u2825", v:"\u2827", w:"\u283A", x:"\u282D", y:"\u283D", z:"\u2835",
+      " ":" "
+    };
+
+    const btn = document.getElementById('toggle');
+    const plain = document.getElementById('plain-text');
+    const braille = document.getElementById('braille-output');
+
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+    } else {
+      btn.disabled = true;
+      btn.textContent = 'API SpeechRecognition no soportada';
+    }
+
+    let listening = false;
+    btn.addEventListener('click', () => {
+      if (!recognition) return;
+      listening = !listening;
+      btn.setAttribute('aria-pressed', listening);
+      btn.textContent = listening ? '⏹️ Detener dictado' : '🎤 Comenzar dictado';
+      if (listening) recognition.start(); else recognition.stop();
+    });
+
+    recognition?.addEventListener('result', e => {
+      let transcript = '';
+      for (const res of e.results) {
+        if (res.isFinal) transcript += res[0].transcript.toLowerCase();
+      }
+      // Limpiar caracteres no admitidos
+      transcript = transcript.replace(/[^a-zñáéíóúü\s]/g, '');
+      plain.textContent += transcript + ' ';
+      // Convertir a braille
+      const converted = [...transcript].map(ch => brailleMap[ch] || '').join('');
+      braille.textContent += converted + ' ';
+    });
+
+    recognition?.addEventListener('error', e => {
+      console.error('Speech error', e);
+    });
+  </script>
+</body>
+</html>
