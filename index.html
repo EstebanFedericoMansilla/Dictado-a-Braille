@@ -28,6 +28,7 @@
   <div>
     <button id="toggle" aria-pressed="false">🎤 Comenzar dictado</button>
     <button id="copyButton" aria-label="Copiar texto al portapapeles">📋 Copiar texto</button>
+    <button id="clearButton" aria-label="Limpiar todo el texto">🗑️ Limpiar</button>
   </div>
   <div class="success-message" role="alert" id="copyMessage">Texto copiado al portapapeles</div>
   <div class="text" id="plain-text" aria-live="polite"></div>
@@ -62,6 +63,13 @@
     });
     const copyButton = document.getElementById('copyButton');
     const copyMessage = document.getElementById('copyMessage');
+    const clearButton = document.getElementById('clearButton');
+
+    // Función para limpiar el texto
+    clearButton.addEventListener('click', () => {
+      plain.textContent = '';
+      braille.textContent = '';
+    });
 
     let recognition;
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
