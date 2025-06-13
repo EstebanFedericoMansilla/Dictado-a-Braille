@@ -7,17 +7,33 @@
   <style>
     body{font-family:system-ui,Arial,Helvetica,sans-serif;margin:2rem;line-height:1.4;background:#fafafa;color:#222}
     .braille{font-size:3rem;letter-spacing:.5rem;margin-top:1rem;word-wrap:break-word}
-    button{padding:.6rem 1.2rem;font-size:1rem;cursor:pointer;border:2px solid #333;border-radius:6px;background:#fff}
+    button{padding:.6rem 1.2rem;font-size:1rem;cursor:pointer;border:2px solid #333;border-radius:6px;background:#fff;margin-right:.5rem}
     button[aria-pressed="true"]{background:#333;color:#fff}
     .text{margin-top:1rem;font-size:1.2rem}
+    .success-message {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #4CAF50;
+      color: white;
+      padding: 1rem;
+      border-radius: 6px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>Dictado a Braille</h1>
   <p>Presiona «Comenzar dictado» y pronuncia letras o palabras. El texto se mostrará en Braille Unicode.</p>
-  <button id="toggle" aria-pressed="false">🎤 Comenzar dictado</button>
+  <div>
+    <button id="toggle" aria-pressed="false">🎤 Comenzar dictado</button>
+    <button id="copyButton" aria-label="Copiar texto al portapapeles">📋 Copiar texto</button>
+  </div>
+  <div class="success-message" role="alert" id="copyMessage">Texto copiado al portapapeles</div>
   <div class="text" id="plain-text" aria-live="polite"></div>
   <div class="braille" id="braille-output" aria-live="polite"></div>
+      <button id="copy-braille" style="margin-top:1rem;" aria-label="Copiar texto Braille al portapapeles">📋 Copiar Braille</button>
+      <span id="copy-msg" aria-live="polite" style="margin-left:0.5rem;"></span>
 
   <script>
     /* Mapa de caracteres latino básicos a patrones Unicode Braille (6 puntos) */
@@ -31,6 +47,21 @@
     const btn = document.getElementById('toggle');
     const plain = document.getElementById('plain-text');
     const braille = document.getElementById('braille-output');
+    const copyBtn = document.getElementById('copy-braille');
+    const copyMsg = document.getElementById('copy-msg');
+    copyBtn?.addEventListener('click', () => {
+      const text = braille.textContent.trim();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        copyMsg.textContent = 'Copiado';
+        setTimeout(()=>copyMsg.textContent='',2000);
+      }).catch(()=> {
+        copyMsg.textContent = 'No se pudo copiar';
+        setTimeout(()=>copyMsg.textContent='',2000);
+      });
+    });
+    const copyButton = document.getElementById('copyButton');
+    const copyMessage = document.getElementById('copyMessage');
 
     let recognition;
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -68,6 +99,32 @@
 
     recognition?.addEventListener('error', e => {
       console.error('Speech error', e);
+    });
+
+    // Funcionalidad del botón copiar
+    copyButton.addEventListener('click', async () => {
+      const textToCopy = plain.textContent;
+      
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        
+        // Mostrar mensaje de éxito
+        copyMessage.style.display = 'block';
+        
+        // Anunciar para lectores de pantalla
+        copyMessage.setAttribute('aria-hidden', 'false');
+        
+        // Ocultar mensaje después de 3 segundos
+        setTimeout(() => {
+          copyMessage.style.display = 'none';
+          copyMessage.setAttribute('aria-hidden', 'true');
+        }, 3000);
+        
+      } catch (err) {
+        console.error('Error al copiar texto:', err);
+        copyMessage.textContent = 'Error al copiar el texto';
+        copyMessage.style.display = 'block';
+      }
     });
   </script>
 </body>
